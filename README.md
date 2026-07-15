@@ -33,7 +33,7 @@ Displays alerts when severe weather conditions are detected, such as:
 
 | Team Member | Assigned Module |
 |-------------|-----------------|
-| **Daniel J. Magarao** | Weather Dashboard, Main Branch |
+| **Daniel J. Magarao** | Weather Dashboard |
 | **Kaye M. Macalalad** | Weather Forecast, Location Search |
 | **Rome Dyanne S. Salvid** | Travel Advisory, Weather Alerts |
 
