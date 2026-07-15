@@ -32,9 +32,9 @@ Displays alerts when severe weather conditions are detected, such as heavy rain 
 
 Team Member | Assigned Module 
 
-Weather Dashboard, Main Branch - Daniel J. Magarao
-Weather Forecast, Location Search - Kaye M. Macalalad
-Travel Advisory, Weather Alerts - Rome Dyanne S. Salvid
+-Weather Dashboard, Main Branch - Daniel J. Magarao
+-Weather Forecast, Location Search - Kaye M. Macalalad
+-Travel Advisory, Weather Alerts - Rome Dyanne S. Salvid
 
 Project Goal
 
