@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Voyager — Weather &amp; Travel Advisory</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body data-condition="clear" data-daytime="day">
+
+  <div class="drawer-overlay" id="drawerOverlay"></div>
+
+  <!-- Off-canvas itinerary navigation -->
+  <nav class="drawer" id="drawer" aria-label="Main navigation">
+    <div class="drawer__head">
+      <span class="drawer__mark">◈</span>
+      <div>
+        <p class="drawer__brand">Voyager</p>
+        <p class="drawer__tagline">Weather &amp; travel advisory</p>
+      </div>
+      <button class="drawer__close" id="drawerClose" aria-label="Close menu">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+
+    <p class="drawer__label">Itinerary</p>
+    <ul class="drawer__route">
+      <li>
+        <button class="navlink" data-page="home" aria-current="page">
+          <span class="navlink__stop">01</span>
+          <span class="navlink__icon">🧭</span>
+          <span class="navlink__text">
+            <span class="navlink__title">Home</span>
+            <span class="navlink__sub">Current conditions</span>
+          </span>
+        </button>
+      </li>
+      <li>
+        <button class="navlink" data-page="forecast">
+          <span class="navlink__stop">02</span>
+          <span class="navlink__icon">📅</span>
+          <span class="navlink__text">
+            <span class="navlink__title">Weather Forecast</span>
+            <span class="navlink__sub">7-day outlook</span>
+          </span>
+        </button>
+      </li>
+      <li>
+        <button class="navlink" data-page="advisory">
+          <span class="navlink__stop">03</span>
+          <span class="navlink__icon">🚦</span>
+          <span class="navlink__text">
+            <span class="navlink__title">Travel Advisory</span>
+            <span class="navlink__sub">Safety recommendation</span>
+          </span>
+        </button>
+      </li>
+      <li>
+        <button class="navlink" data-page="about">
+          <span class="navlink__stop">04</span>
+          <span class="navlink__icon">ℹ️</span>
+          <span class="navlink__text">
+            <span class="navlink__title">About</span>
+            <span class="navlink__sub">How Voyager works</span>
+          </span>
+        </button>
+      </li>
+    </ul>
+
+    <div class="drawer__foot">
+      <span>Voyager v1.0</span>
+    </div>
+  </nav>
+
+  <div class="shell">
+
+    <header class="topbar">
+      <button class="burger" id="burgerBtn" aria-label="Open menu" aria-expanded="false" aria-controls="drawer">
+        <span></span><span></span><span></span>
+      </button>
+
+      <div class="brand">
+        <span class="brand__mark">◈</span>
+        <span class="brand__title">Voyager</span>
+      </div>
+
+      <form class="search" id="searchForm" autocomplete="off">
+        <input
+          type="text"
+          id="searchInput"
+          class="search__input"
+          placeholder="Search a city or municipality…"
+          aria-label="Search location"
+        />
+        <button type="submit" class="search__btn" aria-label="Search">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/><path d="M21 21l-4.3-4.3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </button>
+        <ul class="search__suggestions" id="suggestions" hidden></ul>
+      </form>
+    </header>
+
+    <!-- Weather alert banner — shown site-wide since it's safety-critical -->
+    <div class="alert" id="alertBanner" hidden>
+      <span class="alert__icon">⚠️</span>
+      <span class="alert__text" id="alertText"></span>
+    </div>
+
+    <div class="loading" id="loadingState" hidden>
+      <div class="loading__spinner"></div>
+      <p>Reading the sky…</p>
+    </div>
+
+    <div class="empty" id="emptyState">
+      <p class="empty__title">No location selected</p>
+      <p class="empty__body">Search for a city or municipality above to pull up current conditions, a 7-day outlook, and a travel advisory.</p>
+    </div>
+
+    <main id="pages" hidden>
+
+      <!-- ============ HOME ============ -->
+      <section class="page" id="page-home" data-page="home">
+        <div class="grid">
+
+          <section class="panel panel--hero">
+            <div class="hero__sky" aria-hidden="true">
+              <div class="sky__sun"></div>
+              <div class="sky__moon"></div>
+              <div class="sky__stars"></div>
+              <div class="sky__cloud sky__cloud--a"></div>
+              <div class="sky__cloud sky__cloud--b"></div>
+              <div class="sky__rain"></div>
+              <div class="sky__snow"></div>
+              <div class="sky__bolt"></div>
+            </div>
+
+            <div class="hero__top">
+              <div>
+                <p class="hero__location" id="locationName">—</p>
+                <p class="hero__updated" id="updatedAt">—</p>
+              </div>
+              <div class="hero__icon" id="conditionIcon">☀️</div>
+            </div>
+
+            <div class="hero__temp">
+              <span class="hero__temp-value" id="tempValue">--</span>
+              <span class="hero__temp-unit">°C</span>
+            </div>
+            <p class="hero__condition" id="conditionText">Loading…</p>
+
+            <button class="hero__advisory" id="advisory" data-page-link="advisory">
+              <span class="hero__advisory-dot"></span>
+              <span class="hero__advisory-text">Checking conditions…</span>
+              <span class="hero__advisory-arrow">Details →</span>
+            </button>
+          </section>
+
+          <section class="panel panel--stat">
+            <p class="stat__label">Humidity</p>
+            <p class="stat__value"><span id="humidityValue">--</span><span class="stat__unit">%</span></p>
+            <div class="stat__bar"><div class="stat__bar-fill" id="humidityBar"></div></div>
+          </section>
+
+          <section class="panel panel--stat">
+            <p class="stat__label">Wind speed</p>
+            <p class="stat__value"><span id="windValue">--</span><span class="stat__unit">km/h</span></p>
+            <div class="stat__compass" id="windCompass">
+              <span class="stat__needle" id="windNeedle"></span>
+            </div>
+          </section>
+
+          <section class="panel panel--preview">
+            <div class="section__head">
+              <p class="section__label">Next 3 days</p>
+              <button class="link-btn" data-page-link="forecast">Full forecast →</button>
+            </div>
+            <div class="forecast__row forecast__row--preview" id="forecastPreview"></div>
+          </section>
+
+        </div>
+      </section>
+
+      <!-- ============ FORECAST ============ -->
+      <section class="page" id="page-forecast" data-page="forecast" hidden>
+        <div class="page__header">
+          <p class="page__eyebrow">02 · Weather Forecast</p>
+          <h1 class="page__title">7-day outlook</h1>
+          <p class="page__body" id="forecastLocationLine">Search a location to see its forecast.</p>
+        </div>
+
+        <div class="grid grid--single">
+          <section class="panel panel--hourly">
+            <p class="section__label">Next 24 hours</p>
+            <div id="hourlyChart"></div>
+          </section>
+
+          <section class="panel panel--forecast">
+            <p class="section__label">7-day forecast</p>
+            <div class="forecast__row" id="forecastRow"></div>
+          </section>
+        </div>
+      </section>
+
+      <!-- ============ ADVISORY ============ -->
+      <section class="page" id="page-advisory" data-page="advisory" hidden>
+        <div class="page__header">
+          <p class="page__eyebrow">03 · Travel Advisory</p>
+          <h1 class="page__title">Is it safe to travel?</h1>
+          <p class="page__body">Voyager rates current travel conditions using weather category, wind speed, and rain probability for today.</p>
+        </div>
+
+        <div class="grid grid--single">
+          <section class="panel panel--advisory-full" id="advisoryFull">
+            <div class="advisory-full__badge" id="advisoryFullBadge">🟢</div>
+            <p class="advisory-full__level" id="advisoryFullLevel">Safe to travel</p>
+            <p class="advisory-full__text" id="advisoryFullText">Search a location to get a travel recommendation.</p>
+            <ul class="advisory-full__factors" id="advisoryFactors"></ul>
+          </section>
+
+          <section class="panel panel--legend">
+            <p class="section__label">Advisory levels</p>
+            <ul class="legend">
+              <li><span class="legend__dot legend__dot--safe"></span><div><p class="legend__title">🟢 Safe to travel</p><p class="legend__body">Clear or mild conditions with low wind and rain risk.</p></div></li>
+              <li><span class="legend__dot legend__dot--caution"></span><div><p class="legend__title">🟡 Travel with caution</p><p class="legend__body">Rain, snow, fog, or moderate wind — plan for delays.</p></div></li>
+              <li><span class="legend__dot legend__dot--danger"></span><div><p class="legend__title">🔴 Travel not recommended</p><p class="legend__body">Thunderstorms, high winds, or a high chance of heavy rain.</p></div></li>
+            </ul>
+          </section>
+        </div>
+      </section>
+
+      <!-- ============ ABOUT ============ -->
+      <section class="page" id="page-about" data-page="about" hidden>
+        <div class="page__header">
+          <p class="page__eyebrow">04 · About</p>
+          <h1 class="page__title">About Voyager</h1>
+          <p class="page__body">Voyager is a lightweight travel-weather companion built for Version 1 scope: dashboard, forecast, search, advisory, and alerts.</p>
+        </div>
+
+        <div class="grid grid--single">
+          <section class="panel panel--about">
+            <p class="section__label">How it works</p>
+            <ul class="about__list">
+              <li><strong>Weather dashboard</strong> — live temperature, condition, humidity, and wind for your selected location.</li>
+              <li><strong>7-day forecast</strong> — daily highs, lows, and conditions, plus a 24-hour temperature trend.</li>
+              <li><strong>Location search</strong> — find any city or municipality worldwide.</li>
+              <li><strong>Travel advisory</strong> — an automated 🟢🟡🔴 rating based on today's conditions.</li>
+              <li><strong>Weather alerts</strong> — a banner appears site-wide when severe weather is detected.</li>
+            </ul>
+          </section>
+
+          <section class="panel panel--about">
+            <p class="section__label">Data sources</p>
+            <p class="about__body">Forecast data is provided by <strong>meteoblue</strong>. Location search uses the free <strong>Open-Meteo</strong> geocoding service.</p>
+            <p class="about__body about__disclaimer">Travel advisories are generated automatically from weather data and are a general guide only — always confirm conditions with official local authorities before traveling.</p>
+          </section>
+        </div>
+      </section>
+
+    </main>
+
+    <footer class="footer">
+      <span>Voyager · Weather data via meteoblue</span>
+      <span id="footerCoords"></span>
+    </footer>
+
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
