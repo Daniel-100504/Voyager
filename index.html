@@ -1,14 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Voyager — Weather &amp; Travel Advisory</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Voyager — Weather &amp; Travel Advisory</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="styles.css?v=2">
 </head>
+
 <body data-condition="clear" data-daytime="day">
 
   <div class="drawer-overlay" id="drawerOverlay"></div>
@@ -22,7 +26,9 @@
         <p class="drawer__tagline">Weather &amp; travel advisory</p>
       </div>
       <button class="drawer__close" id="drawerClose" aria-label="Close menu">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+          <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+        </svg>
       </button>
     </div>
 
@@ -88,15 +94,13 @@
       </div>
 
       <form class="search" id="searchForm" autocomplete="off">
-        <input
-          type="text"
-          id="searchInput"
-          class="search__input"
-          placeholder="Search a city or municipality…"
-          aria-label="Search location"
-        />
+        <input type="text" id="searchInput" class="search__input" placeholder="Search a city or municipality…"
+          aria-label="Search location" />
         <button type="submit" class="search__btn" aria-label="Search">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/><path d="M21 21l-4.3-4.3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2" />
+            <path d="M21 21l-4.3-4.3" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+          </svg>
         </button>
         <ul class="search__suggestions" id="suggestions" hidden></ul>
       </form>
@@ -115,7 +119,8 @@
 
     <div class="empty" id="emptyState">
       <p class="empty__title">No location selected</p>
-      <p class="empty__body">Search for a city or municipality above to pull up current conditions, a 7-day outlook, and a travel advisory.</p>
+      <p class="empty__body">Search for a city or municipality above to pull up current conditions, a 7-day outlook, and
+        a travel advisory.</p>
     </div>
 
     <main id="pages" hidden>
@@ -160,7 +165,9 @@
           <section class="panel panel--stat">
             <p class="stat__label">Humidity</p>
             <p class="stat__value"><span id="humidityValue">--</span><span class="stat__unit">%</span></p>
-            <div class="stat__bar"><div class="stat__bar-fill" id="humidityBar"></div></div>
+            <div class="stat__bar">
+              <div class="stat__bar-fill" id="humidityBar"></div>
+            </div>
           </section>
 
           <section class="panel panel--stat">
@@ -180,6 +187,42 @@
           </section>
 
         </div>
+      </section>
+
+      <!-- ============ FERRY ROUTES ============ -->
+      <section class="panel panel--ferry">
+        <div class="section__head">
+          <p class="section__label">🚢 Ferry Routes</p>
+          <button class="link-btn" id="refreshFerryBtn">
+            Refresh
+          </button>
+        </div>
+
+        <p class="ferry__subtitle">
+          Available ferry schedules for your selected destination.
+        </p>
+
+        <div id="ferryLoading" class="ferry__loading" hidden>
+          Loading ferry routes...
+        </div>
+
+        <div id="ferryError" class="ferry__error" hidden>
+          Unable to load ferry routes.
+        </div>
+
+        <div id="ferryRoutes">
+
+          <!-- Routes will be inserted here using JavaScript -->
+
+        </div>
+
+        <div class="ferry__recommendation">
+          <h4>Travel Recommendation</h4>
+          <p id="ferryRecommendation">
+            Search a location to receive ferry travel recommendations.
+          </p>
+        </div>
+
       </section>
 
       <!-- ============ FORECAST ============ -->
@@ -208,7 +251,8 @@
         <div class="page__header">
           <p class="page__eyebrow">03 · Travel Advisory</p>
           <h1 class="page__title">Is it safe to travel?</h1>
-          <p class="page__body">Voyager rates current travel conditions using weather category, wind speed, and rain probability for today.</p>
+          <p class="page__body">Voyager rates current travel conditions using weather category, wind speed, and rain
+            probability for today.</p>
         </div>
 
         <div class="grid grid--single">
@@ -222,9 +266,24 @@
           <section class="panel panel--legend">
             <p class="section__label">Advisory levels</p>
             <ul class="legend">
-              <li><span class="legend__dot legend__dot--safe"></span><div><p class="legend__title">🟢 Safe to travel</p><p class="legend__body">Clear or mild conditions with low wind and rain risk.</p></div></li>
-              <li><span class="legend__dot legend__dot--caution"></span><div><p class="legend__title">🟡 Travel with caution</p><p class="legend__body">Rain, snow, fog, or moderate wind — plan for delays.</p></div></li>
-              <li><span class="legend__dot legend__dot--danger"></span><div><p class="legend__title">🔴 Travel not recommended</p><p class="legend__body">Thunderstorms, high winds, or a high chance of heavy rain.</p></div></li>
+              <li><span class="legend__dot legend__dot--safe"></span>
+                <div>
+                  <p class="legend__title">🟢 Safe to travel</p>
+                  <p class="legend__body">Clear or mild conditions with low wind and rain risk.</p>
+                </div>
+              </li>
+              <li><span class="legend__dot legend__dot--caution"></span>
+                <div>
+                  <p class="legend__title">🟡 Travel with caution</p>
+                  <p class="legend__body">Rain, snow, fog, or moderate wind — plan for delays.</p>
+                </div>
+              </li>
+              <li><span class="legend__dot legend__dot--danger"></span>
+                <div>
+                  <p class="legend__title">🔴 Travel not recommended</p>
+                  <p class="legend__body">Thunderstorms, high winds, or a high chance of heavy rain.</p>
+                </div>
+              </li>
             </ul>
           </section>
         </div>
@@ -235,15 +294,18 @@
         <div class="page__header">
           <p class="page__eyebrow">04 · About</p>
           <h1 class="page__title">About Voyager</h1>
-          <p class="page__body">Voyager is a lightweight travel-weather companion built for Version 1 scope: dashboard, forecast, search, advisory, and alerts.</p>
+          <p class="page__body">Voyager is a lightweight travel-weather companion built for Version 1 scope: dashboard,
+            forecast, search, advisory, and alerts.</p>
         </div>
 
         <div class="grid grid--single">
           <section class="panel panel--about">
             <p class="section__label">How it works</p>
             <ul class="about__list">
-              <li><strong>Weather dashboard</strong> — live temperature, condition, humidity, and wind for your selected location.</li>
-              <li><strong>7-day forecast</strong> — daily highs, lows, and conditions, plus a 24-hour temperature trend.</li>
+              <li><strong>Weather dashboard</strong> — live temperature, condition, humidity, and wind for your selected
+                location.</li>
+              <li><strong>7-day forecast</strong> — daily highs, lows, and conditions, plus a 24-hour temperature trend.
+              </li>
               <li><strong>Location search</strong> — find any city or municipality worldwide.</li>
               <li><strong>Travel advisory</strong> — an automated 🟢🟡🔴 rating based on today's conditions.</li>
               <li><strong>Weather alerts</strong> — a banner appears site-wide when severe weather is detected.</li>
@@ -252,8 +314,10 @@
 
           <section class="panel panel--about">
             <p class="section__label">Data sources</p>
-            <p class="about__body">Forecast data is provided by <strong>meteoblue</strong>. Location search uses the free <strong>Open-Meteo</strong> geocoding service.</p>
-            <p class="about__body about__disclaimer">Travel advisories are generated automatically from weather data and are a general guide only — always confirm conditions with official local authorities before traveling.</p>
+            <p class="about__body">Forecast data is provided by <strong>meteoblue</strong>. Location search uses the
+              free <strong>Open-Meteo</strong> geocoding service.</p>
+            <p class="about__body about__disclaimer">Travel advisories are generated automatically from weather data and
+              are a general guide only — always confirm conditions with official local authorities before traveling.</p>
           </section>
         </div>
       </section>
@@ -269,4 +333,5 @@
 
   <script src="script.js"></script>
 </body>
+
 </html>
