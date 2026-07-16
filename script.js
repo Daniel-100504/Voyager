@@ -2,24 +2,25 @@
 const GEOCODE_URL = "https://geocoding-api.open-meteo.com/v1/search";
 const FORECAST_URL = "https://my.meteoblue.com/packages/basic-1h_basic-day";
 const METEOBLUE_API_KEY = "ZFgqArEKt497xQiY";
+const FERRY_API_URL = "./api/ferry-routes.php";
 
 const PICTOCODES = {
-  1:  { label: "Clear sky",                    icon: "☀️", category: "clear" },
-  2:  { label: "Slightly cloudy",               icon: "🌤️", category: "clear" },
-  3:  { label: "Partly cloudy",                 icon: "⛅",  category: "cloudy" },
-  4:  { label: "Partly cloudy with thunder",    icon: "⛈️",  category: "storm" },
-  5:  { label: "Mixed with showers",            icon: "🌦️", category: "rain" },
-  6:  { label: "Overcast with rain",            icon: "🌧️", category: "rain" },
-  7:  { label: "Mixed with snow",               icon: "🌨️", category: "snow" },
-  8:  { label: "Overcast with snow",            icon: "❄️",  category: "snow" },
-  9:  { label: "Overcast with rain and snow",   icon: "🌨️", category: "snow" },
-  10: { label: "Overcast",                      icon: "☁️", category: "cloudy" },
-  11: { label: "Fog",                           icon: "🌫️", category: "fog" },
-  13: { label: "Overcast with heavy rain",      icon: "🌧️", category: "rain" },
-  14: { label: "Overcast with heavy snow",      icon: "❄️",  category: "snow" },
-  15: { label: "Overcast with thunderstorm",    icon: "⛈️",  category: "storm" },
-  16: { label: "Overcast with light rain",      icon: "🌦️", category: "rain" },
-  17: { label: "Overcast with light snow",      icon: "🌨️", category: "snow" },
+  1: { label: "Clear sky", icon: "☀️", category: "clear" },
+  2: { label: "Slightly cloudy", icon: "🌤️", category: "clear" },
+  3: { label: "Partly cloudy", icon: "⛅", category: "cloudy" },
+  4: { label: "Partly cloudy with thunder", icon: "⛈️", category: "storm" },
+  5: { label: "Mixed with showers", icon: "🌦️", category: "rain" },
+  6: { label: "Overcast with rain", icon: "🌧️", category: "rain" },
+  7: { label: "Mixed with snow", icon: "🌨️", category: "snow" },
+  8: { label: "Overcast with snow", icon: "❄️", category: "snow" },
+  9: { label: "Overcast with rain and snow", icon: "🌨️", category: "snow" },
+  10: { label: "Overcast", icon: "☁️", category: "cloudy" },
+  11: { label: "Fog", icon: "🌫️", category: "fog" },
+  13: { label: "Overcast with heavy rain", icon: "🌧️", category: "rain" },
+  14: { label: "Overcast with heavy snow", icon: "❄️", category: "snow" },
+  15: { label: "Overcast with thunderstorm", icon: "⛈️", category: "storm" },
+  16: { label: "Overcast with light rain", icon: "🌦️", category: "rain" },
+  17: { label: "Overcast with light snow", icon: "🌨️", category: "snow" },
 };
 
 function pictoInfo(code) {
@@ -59,6 +60,13 @@ const advisoryFactors = document.getElementById("advisoryFactors");
 const alertBanner = document.getElementById("alertBanner");
 const alertText = document.getElementById("alertText");
 const footerCoords = document.getElementById("footerCoords");
+
+// Ferry Routes
+const ferryRoutesContainer = document.getElementById("ferryRoutes");
+const ferryRecommendation = document.getElementById("ferryRecommendation");
+const ferryLoading = document.getElementById("ferryLoading");
+const ferryError = document.getElementById("ferryError");
+const refreshFerryBtn = document.getElementById("refreshFerryBtn");
 
 let searchTimer = null;
 let activeSuggestions = [];
@@ -258,7 +266,7 @@ function setAdvisory(info, currentWind, maxWindToday, rainChance) {
 
   const severe = category === "storm" || maxWindToday >= 60 || rainChance >= 80;
   const caution = category === "rain" || category === "snow" || category === "fog" ||
-                   maxWindToday >= 35 || rainChance >= 45 || currentWind >= 35;
+    maxWindToday >= 35 || rainChance >= 45 || currentWind >= 35;
 
   if (severe) {
     level = "danger";
@@ -287,6 +295,25 @@ function setAdvisory(info, currentWind, maxWindToday, rainChance) {
     `Rain chance today: ${Math.round(rainChance)}%`,
   ];
   advisoryFactors.innerHTML = factors.map((f) => `<li>${f}</li>`).join("");
+  // Ferry recommendation
+  if (level === "safe") {
+
+    ferryRecommendation.textContent =
+      "🟢 Ferry trips are operating normally.";
+
+  }
+  else if (level === "caution") {
+
+    ferryRecommendation.textContent =
+      "🟡 Some ferry departures may experience delays due to weather.";
+
+  }
+  else {
+
+    ferryRecommendation.textContent =
+      "🔴 Ferry trips are not recommended due to severe weather.";
+
+  }
 }
 
 function setAlert(category, maxWindToday, rainChance) {
@@ -380,12 +407,107 @@ function renderHourlyChart(hourly) {
     </svg>
   `;
 }
+/* ==========================
+   Ferry Routes
+========================== */
+
+async function loadFerryRoutes() {
+
+  ferryLoading.hidden = false;
+  ferryError.hidden = true;
+
+  try {
+
+    const response = await fetch(FERRY_API_URL);
+
+    if (!response.ok) {
+      throw new Error("Unable to load ferry routes.");
+    }
+
+    const routes = await response.json();
+
+    renderFerryRoutes(routes);
+
+  } catch (error) {
+
+    console.error(error);
+
+    ferryError.hidden = false;
+
+  }
+
+  ferryLoading.hidden = true;
+}
+
+async function addFerryRoute(routeData) {
+
+  try {
+
+    const response = await fetch(FERRY_API_URL, {
+
+      method: "POST",
+
+      headers: {
+        "Content-Type": "application/json"
+      },
+
+      body: JSON.stringify(routeData)
+
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to add route.");
+    }
+
+    const result = await response.json();
+
+    console.log(result);
+
+    loadFerryRoutes();
+
+  } catch (error) {
+
+    console.error(error);
+
+  }
+
+}
+
+function renderFerryRoutes(routes) {
+
+    ferryRoutesContainer.innerHTML = "";
+
+    routes.forEach(route => {
+
+        const card = document.createElement("div");
+
+        card.className = "ferry-card";
+
+        card.innerHTML = `
+            <h4>${route.route}</h4>
+            <p><strong>Departure:</strong> ${route.departure}</p>
+            <p><strong>Arrival:</strong> ${route.arrival}</p>
+            <p><strong>Operator:</strong> ${route.operator}</p>
+            <p><strong>Status:</strong> ${route.status}</p>
+        `;
+
+        ferryRoutesContainer.appendChild(card);
+
+    });
+
+}
+
+refreshFerryBtn.addEventListener("click", loadFerryRoutes);
 window.addEventListener("DOMContentLoaded", () => {
-  selectPlace({
-    name: "Manila",
-    admin1: "Metro Manila",
-    country: "Philippines",
-    latitude: 14.5995,
-    longitude: 120.9842,
-  });
+
+    loadFerryRoutes();
+
+    selectPlace({
+        name: "Manila",
+        admin1: "Metro Manila",
+        country: "Philippines",
+        latitude: 14.5995,
+        longitude: 120.9842,
+    });
+
 });
