@@ -16,6 +16,11 @@
         "status": "Delayed"
     },
     {
-        "id": 3
+       "id": 3,
+       "route": "Roxas → Caticlan",
+       "departure": "10:00 AM",
+       "arrival": "11:30 AM",
+       "operator": "2GO",
+       "status": "On Schedule"
     }
 ]
