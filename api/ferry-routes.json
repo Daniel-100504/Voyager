@@ -1,0 +1,21 @@
+[
+    {
+        "id": 1,
+        "route": "Batangas \u2192 Calapan",
+        "departure": "06:00 AM",
+        "arrival": "08:00 AM",
+        "operator": "Montenegro",
+        "status": "On Schedule"
+    },
+    {
+        "id": 2,
+        "route": "Matnog \u2192 Allen",
+        "departure": "07:30 AM",
+        "arrival": "09:00 AM",
+        "operator": "Starlite",
+        "status": "Delayed"
+    },
+    {
+        "id": 3
+    }
+]
