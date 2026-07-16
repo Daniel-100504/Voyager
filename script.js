@@ -2,7 +2,7 @@
 const GEOCODE_URL = "https://geocoding-api.open-meteo.com/v1/search";
 const FORECAST_URL = "https://my.meteoblue.com/packages/basic-1h_basic-day";
 const METEOBLUE_API_KEY = "ZFgqArEKt497xQiY";
-const FERRY_API_URL = "./api/ferry-routes.php";
+const FERRY_API_URL = "./api/ferry-routes.json";
 
 const PICTOCODES = {
   1: { label: "Clear sky", icon: "☀️", category: "clear" },
