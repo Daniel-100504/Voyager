@@ -943,7 +943,8 @@ body[data-condition="storm"] .sky__bolt {
 
 /* Preview strip (Home) */
 .panel--preview {
-  grid-column: 1 / 4;
+  grid-column: 2 / 4;
+  grid-row: 2 / 3;
 }
 
 .section__head {
@@ -1265,6 +1266,7 @@ body[data-condition="storm"] .sky__bolt {
 
 .panel--ferry {
   grid-column: 1/-1;
+  margin-top: 22px;
 }
 
 .ferry__subtitle {

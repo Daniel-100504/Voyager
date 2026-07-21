@@ -114,7 +114,7 @@ pageLinkTriggers.forEach((el) => {
 
 function initialPage() {
   const hash = window.location.hash.replace("#", "");
-  const valid = ["home", "forecast", "advisory", "about"];
+  const valid = ["home", "forecast", "ferry", "advisory", "about"];
   return valid.includes(hash) ? hash : "home";
 }
 

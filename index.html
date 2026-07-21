@@ -55,8 +55,18 @@
         </button>
       </li>
       <li>
-        <button class="navlink" data-page="advisory">
+        <button class="navlink" data-page="ferry">
           <span class="navlink__stop">03</span>
+          <span class="navlink__icon">🚢</span>
+          <span class="navlink__text">
+            <span class="navlink__title">Ferry Routes</span>
+            <span class="navlink__sub">Departure status</span>
+          </span>
+        </button>
+      </li>
+      <li>
+        <button class="navlink" data-page="advisory">
+          <span class="navlink__stop">04</span>
           <span class="navlink__icon">🚦</span>
           <span class="navlink__text">
             <span class="navlink__title">Travel Advisory</span>
@@ -66,7 +76,7 @@
       </li>
       <li>
         <button class="navlink" data-page="about">
-          <span class="navlink__stop">04</span>
+          <span class="navlink__stop">05</span>
           <span class="navlink__icon">ℹ️</span>
           <span class="navlink__text">
             <span class="navlink__title">About</span>
@@ -190,42 +200,6 @@
         </div>
       </section>
 
-      <!-- ============ FERRY ROUTES ============ -->
-      <section class="panel panel--ferry">
-        <div class="section__head">
-          <p class="section__label">🚢 Ferry Routes</p>
-          <button class="link-btn" id="refreshFerryBtn">
-            Refresh
-          </button>
-        </div>
-
-        <p class="ferry__subtitle">
-          Available ferry schedules for your selected destination.
-        </p>
-
-        <div id="ferryLoading" class="ferry__loading" hidden>
-          Loading ferry routes...
-        </div>
-
-        <div id="ferryError" class="ferry__error" hidden>
-          Unable to load ferry routes.
-        </div>
-
-        <div id="ferryRoutes">
-
-          <!-- Routes will be inserted here using JavaScript -->
-
-        </div>
-
-        <div class="ferry__recommendation">
-          <h4>Travel Recommendation</h4>
-          <p id="ferryRecommendation">
-            Search a location to receive ferry travel recommendations.
-          </p>
-        </div>
-
-      </section>
-
       <!-- ============ FORECAST ============ -->
       <section class="page" id="page-forecast" data-page="forecast" hidden>
         <div class="page__header">
@@ -247,10 +221,47 @@
         </div>
       </section>
 
+      <!-- ============ FERRY ROUTES ============ -->
+      <section class="page" id="page-ferry" data-page="ferry" hidden>
+        <div class="page__header">
+          <p class="page__eyebrow">03 · Ferry Routes</p>
+          <h1 class="page__title">Ferry route status</h1>
+          <p class="page__body">Check current ferry schedules and recommendations for your selected destination.</p>
+        </div>
+
+        <div class="grid grid--single">
+          <section class="panel panel--ferry">
+            <div class="section__head">
+              <p class="section__label">Route recommendations</p>
+              <button class="link-btn" id="refreshFerryBtn">Refresh</button>
+            </div>
+
+            <p class="ferry__subtitle">
+              Available ferry schedules for your selected destination.
+            </p>
+
+            <div id="ferryLoading" class="ferry__loading" hidden>
+              Loading ferry routes...
+            </div>
+
+            <div id="ferryError" class="ferry__error" hidden>
+              Unable to load ferry routes.
+            </div>
+
+            <div id="ferryRoutes"></div>
+
+            <div class="ferry__recommendation">
+              <h4>Travel Recommendation</h4>
+              <p id="ferryRecommendation">Search a location to receive ferry travel recommendations.</p>
+            </div>
+          </section>
+        </div>
+      </section>
+
       <!-- ============ ADVISORY ============ -->
       <section class="page" id="page-advisory" data-page="advisory" hidden>
         <div class="page__header">
-          <p class="page__eyebrow">03 · Travel Advisory</p>
+          <p class="page__eyebrow">04 · Travel Advisory</p>
           <h1 class="page__title">Is it safe to travel?</h1>
           <p class="page__body">Voyager rates current travel conditions using weather category, wind speed, and rain
             probability for today.</p>
@@ -269,19 +280,19 @@
             <ul class="legend">
               <li><span class="legend__dot legend__dot--safe"></span>
                 <div>
-                  <p class="legend__title">🟢 Safe to travel</p>
+                  <p class="legend__title">Safe to travel</p>
                   <p class="legend__body">Clear or mild conditions with low wind and rain risk.</p>
                 </div>
               </li>
               <li><span class="legend__dot legend__dot--caution"></span>
                 <div>
-                  <p class="legend__title">🟡 Travel with caution</p>
+                  <p class="legend__title">Travel with caution</p>
                   <p class="legend__body">Rain, snow, fog, or moderate wind — plan for delays.</p>
                 </div>
               </li>
               <li><span class="legend__dot legend__dot--danger"></span>
                 <div>
-                  <p class="legend__title">🔴 Travel not recommended</p>
+                  <p class="legend__title">Travel not recommended</p>
                   <p class="legend__body">Thunderstorms, high winds, or a high chance of heavy rain.</p>
                 </div>
               </li>
@@ -293,7 +304,7 @@
       <!-- ============ ABOUT ============ -->
       <section class="page" id="page-about" data-page="about" hidden>
         <div class="page__header">
-          <p class="page__eyebrow">04 · About</p>
+          <p class="page__eyebrow">05 · About</p>
           <h1 class="page__title">About Voyager</h1>
           <p class="page__body">Voyager is a lightweight travel-weather companion built for Version 1 scope: dashboard,
             forecast, search, advisory, and alerts.</p>
