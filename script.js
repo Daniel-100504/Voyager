@@ -30,6 +30,7 @@ function pictoInfo(code) {
 const searchForm = document.getElementById("searchForm");
 const searchInput = document.getElementById("searchInput");
 const suggestionsEl = document.getElementById("suggestions");
+const searchStatus = document.getElementById("searchStatus");
 
 const pagesEl = document.getElementById("pages");
 const emptyState = document.getElementById("emptyState");
@@ -70,6 +71,7 @@ const refreshFerryBtn = document.getElementById("refreshFerryBtn");
 
 let searchTimer = null;
 let activeSuggestions = [];
+let activeSuggestionIndex = -1;
 
 const burgerBtn = document.getElementById("burgerBtn");
 const drawer = document.getElementById("drawer");
@@ -121,14 +123,36 @@ searchInput.addEventListener("input", () => {
   const query = searchInput.value.trim();
   if (query.length < 2) {
     hideSuggestions();
+    clearSearchStatus();
     return;
   }
   searchTimer = setTimeout(() => runGeocode(query), 300);
 });
 
+searchInput.addEventListener("keydown", (e) => {
+  if (suggestionsEl.hidden || !activeSuggestions.length) return;
+
+  if (e.key === "ArrowDown") {
+    e.preventDefault();
+    setActiveSuggestion(activeSuggestionIndex + 1);
+  } else if (e.key === "ArrowUp") {
+    e.preventDefault();
+    setActiveSuggestion(activeSuggestionIndex - 1);
+  } else if (e.key === "Enter") {
+    if (activeSuggestionIndex >= 0) {
+      e.preventDefault();
+      selectSuggestion(activeSuggestionIndex);
+    }
+  } else if (e.key === "Escape") {
+    hideSuggestions();
+  }
+});
+
 searchForm.addEventListener("submit", (e) => {
   e.preventDefault();
-  if (activeSuggestions.length > 0) {
+  if (activeSuggestionIndex >= 0 && activeSuggestions[activeSuggestionIndex]) {
+    selectSuggestion(activeSuggestionIndex);
+  } else if (activeSuggestions.length > 0) {
     selectPlace(activeSuggestions[0]);
   }
 });
@@ -138,42 +162,94 @@ document.addEventListener("click", (e) => {
 });
 
 async function runGeocode(query) {
+  showSearchStatus("Searching locations…", "info");
+
   try {
     const url = `${GEOCODE_URL}?name=${encodeURIComponent(query)}&count=6&language=en&format=json`;
     const res = await fetch(url);
     const data = await res.json();
     activeSuggestions = data.results || [];
-    renderSuggestions(activeSuggestions);
+    renderSuggestions(activeSuggestions, query);
   } catch (err) {
     console.error("Geocoding error:", err);
+    showSearchStatus("Unable to search locations. Check your connection.", "error");
     hideSuggestions();
   }
 }
 
-function renderSuggestions(results) {
+function renderSuggestions(results, query = "") {
   if (!results.length) {
     hideSuggestions();
+    showSearchStatus(`No matches found for "${query}". Try a nearby city or municipality.`, "warning");
     return;
   }
   suggestionsEl.innerHTML = "";
-  results.forEach((place) => {
+  activeSuggestionIndex = -1;
+  results.forEach((place, index) => {
     const li = document.createElement("li");
+    li.setAttribute("role", "option");
+    li.setAttribute("aria-selected", "false");
+    li.id = `suggestion-${index}`;
     const region = [place.admin1, place.country].filter(Boolean).join(", ");
     li.innerHTML = `${place.name}<small>${region}</small>`;
     li.addEventListener("click", () => selectPlace(place));
+    li.addEventListener("mouseenter", () => setActiveSuggestion(index));
     suggestionsEl.appendChild(li);
   });
   suggestionsEl.hidden = false;
+  showSearchStatus("Use ↑ ↓ and Enter to choose a location.", "info");
 }
 
 function hideSuggestions() {
   suggestionsEl.hidden = true;
   suggestionsEl.innerHTML = "";
+  activeSuggestionIndex = -1;
+}
+
+function showSearchStatus(message, type = "info") {
+  if (!searchStatus) return;
+  searchStatus.textContent = message;
+  searchStatus.hidden = !message;
+  searchStatus.classList.toggle("search__status--error", type === "error");
+  searchStatus.classList.toggle("search__status--warning", type === "warning");
+}
+
+function clearSearchStatus() {
+  showSearchStatus("");
+}
+
+function setActiveSuggestion(index) {
+  if (!activeSuggestions.length) return;
+  const items = Array.from(suggestionsEl.children);
+  if (!items.length) return;
+
+  if (index < 0) {
+    index = items.length - 1;
+  } else if (index >= items.length) {
+    index = 0;
+  }
+
+  activeSuggestionIndex = index;
+  items.forEach((item, idx) => {
+    item.classList.toggle("active", idx === index);
+    item.setAttribute("aria-selected", idx === index ? "true" : "false");
+  });
+
+  const activeItem = items[index];
+  if (activeItem) {
+    activeItem.scrollIntoView({ block: "nearest" });
+  }
+}
+
+function selectSuggestion(index) {
+  if (index < 0 || index >= activeSuggestions.length) return;
+  selectPlace(activeSuggestions[index]);
 }
 
 function selectPlace(place) {
   searchInput.value = `${place.name}${place.admin1 ? ", " + place.admin1 : ""}`;
   hideSuggestions();
+  clearSearchStatus();
   loadWeather(place);
 }
 
@@ -246,34 +322,39 @@ function renderDashboard(place, data) {
   humidityValue.textContent = humidity;
   humidityBar.style.width = `${humidity}%`;
 
+  const precipitation = daily.precipitation_amount?.[0] ?? daily.precipitation_sum?.[0] ?? 0;
   const wind = Math.round(hourly.windspeed[nowIdx]);
   windValue.textContent = wind;
   windNeedle.style.transform = `translate(-50%, -100%) rotate(${hourly.winddirection[nowIdx]}deg)`;
 
-  const maxWindToday = daily.windspeed_max[0];
-  const rainChance = daily.precipitation_probability[0];
-  setAdvisory(info, wind, maxWindToday, rainChance);
-  setAlert(info.category, maxWindToday, rainChance);
+  const maxWindToday = daily.windspeed_max?.[0] ?? 0;
+  const rainChance = daily.precipitation_probability?.[0] ?? 0;
+  setAdvisory(info, wind, maxWindToday, rainChance, precipitation, humidity);
+  setAlert(info.category, maxWindToday, rainChance, precipitation);
 
   renderForecast(daily);
   renderHourlyChart(hourly);
 }
 
-function setAdvisory(info, currentWind, maxWindToday, rainChance) {
+function setAdvisory(info, currentWind, maxWindToday, rainChance, precipitation, humidity) {
   const category = info.category;
   let level = "safe";
   let text = "Conditions look clear — safe to travel.";
 
-  const severe = category === "storm" || maxWindToday >= 60 || rainChance >= 80;
-  const caution = category === "rain" || category === "snow" || category === "fog" ||
-    maxWindToday >= 35 || rainChance >= 45 || currentWind >= 35;
+  const hasThunder = category === "storm";
+  const heavyRain = precipitation >= 15 || rainChance >= 80;
+  const strongWind = maxWindToday >= 60 || currentWind >= 45;
+  const highHumidity = humidity >= 90;
+  const cautionCategory = ["rain", "snow", "fog"].includes(category);
+  const severe = hasThunder || strongWind || heavyRain;
+  const caution = !severe && (cautionCategory || maxWindToday >= 35 || rainChance >= 50 || precipitation >= 8 || highHumidity);
 
   if (severe) {
     level = "danger";
-    text = "Severe weather expected — travel not recommended.";
+    text = "Severe conditions expected — travel not recommended.";
   } else if (caution) {
     level = "caution";
-    text = "Changeable conditions — travel with caution.";
+    text = "Moderate weather conditions — travel with caution.";
   }
 
   const dotIcon = level === "danger" ? "🔴" : level === "caution" ? "🟡" : "🟢";
@@ -286,44 +367,38 @@ function setAdvisory(info, currentWind, maxWindToday, rainChance) {
   // Full detail on the Advisory page
   advisoryFullBadge.textContent = dotIcon;
   advisoryFullLevel.textContent = levelLabel;
-  advisoryFullText.textContent = `${text} Based on current conditions in the area: ${info.label.toLowerCase()}.`;
+  advisoryFullText.textContent = `${text} Based on current conditions in the area: ${info.label.toLowerCase()}, ${precipitation.toFixed(1)} mm expected, and ${rainChance}% chance of rain.`;
 
   const factors = [
     `Condition: ${info.label}`,
     `Wind now: ${currentWind} km/h`,
     `Wind today (peak): ${Math.round(maxWindToday)} km/h`,
     `Rain chance today: ${Math.round(rainChance)}%`,
+    `Precipitation amount: ${precipitation.toFixed(1)} mm`,
+    `Humidity: ${humidity}%`,
   ];
   advisoryFactors.innerHTML = factors.map((f) => `<li>${f}</li>`).join("");
   // Ferry recommendation
   if (level === "safe") {
-
     ferryRecommendation.textContent =
       "🟢 Ferry trips are operating normally.";
-
-  }
-  else if (level === "caution") {
-
+  } else if (level === "caution") {
     ferryRecommendation.textContent =
       "🟡 Some ferry departures may experience delays due to weather.";
-
-  }
-  else {
-
+  } else {
     ferryRecommendation.textContent =
       "🔴 Ferry trips are not recommended due to severe weather.";
-
   }
 }
 
-function setAlert(category, maxWindToday, rainChance) {
+function setAlert(category, maxWindToday, rainChance, precipitation) {
   let message = null;
 
   if (category === "storm") {
     message = "Thunderstorm activity detected in the area. Seek shelter and avoid unnecessary travel.";
   } else if (maxWindToday >= 60) {
     message = `Strong winds expected today (up to ${Math.round(maxWindToday)} km/h). Secure loose objects outdoors.`;
-  } else if (rainChance >= 80) {
+  } else if (precipitation >= 15 || rainChance >= 80) {
     message = `Heavy rain likely today (${Math.round(rainChance)}% chance). Watch for localized flooding.`;
   } else if (category === "snow" && maxWindToday >= 40) {
     message = "Blowing snow expected — reduced visibility on the road.";
