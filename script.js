@@ -501,10 +501,9 @@ function getRelevantFerryRoutes(routes, place) {
 
   const scoredRoutes = routes
     .map((route) => ({ ...route, relevance: getFerryRouteRelevance(route, place) }))
-    .filter((route) => route.relevance.score > 0)
     .sort((a, b) => b.relevance.score - a.relevance.score);
 
-  return scoredRoutes.length ? scoredRoutes.slice(0, 3) : [];
+  return scoredRoutes.slice(0, 3);
 }
 
 async function loadFerryRoutes(place = currentPlace) {
@@ -579,13 +578,15 @@ function renderFerryRoutes(routes, place = currentPlace) {
         const card = document.createElement("div");
         card.className = "ferry-card ferry-card--empty";
         card.innerHTML = `
-            <h4>No directly matching ferry routes</h4>
-            <p>Try searching for a coastal city or port to surface more relevant options.</p>
+            <h4>No ferry routes available</h4>
+            <p>Ferry route data is currently unavailable.</p>
         `;
         ferryRoutesContainer.appendChild(card);
-        ferryRecommendation.textContent = "No direct ferry routes matched this destination yet.";
+        ferryRecommendation.textContent = "No ferry routes available at this time.";
         return;
     }
+
+    const hasDirectMatch = place && relevantRoutes.some(route => route.relevance.score > 0);
 
     relevantRoutes.forEach((route) => {
 
@@ -593,7 +594,7 @@ function renderFerryRoutes(routes, place = currentPlace) {
 
         card.className = "ferry-card";
 
-        const badgeText = route.relevance.score >= 10 ? "Best match" : route.relevance.score >= 6 ? "Relevant" : "Nearby";
+        const badgeText = route.relevance.score >= 10 ? "Best match" : route.relevance.score >= 6 ? "Relevant" : route.relevance.score > 0 ? "Nearby" : "Available";
 
         card.innerHTML = `
             <div class="ferry-card__head">
@@ -611,7 +612,8 @@ function renderFerryRoutes(routes, place = currentPlace) {
     });
 
     const destinationName = place ? `${place.name}${place.admin1 ? `, ${place.admin1}` : ""}` : "your selected destination";
-    ferryRecommendation.textContent = `The most relevant ferry option for ${destinationName} is ${relevantRoutes[0].route}.`;
+    const recommendationPrefix = hasDirectMatch ? "The most relevant ferry option for" : "Available ferry routes near";
+    ferryRecommendation.textContent = `${recommendationPrefix} ${destinationName} is ${relevantRoutes[0].route}.`;
 
 }
 
