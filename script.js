@@ -70,6 +70,8 @@ const refreshFerryBtn = document.getElementById("refreshFerryBtn");
 
 let searchTimer = null;
 let activeSuggestions = [];
+let activeSuggestionIndex = -1;
+let currentPlace = null;
 
 const burgerBtn = document.getElementById("burgerBtn");
 const drawer = document.getElementById("drawer");
@@ -126,9 +128,36 @@ searchInput.addEventListener("input", () => {
   searchTimer = setTimeout(() => runGeocode(query), 300);
 });
 
+searchInput.addEventListener("keydown", (e) => {
+  if (suggestionsEl.hidden || !activeSuggestions.length) return;
+
+  switch (e.key) {
+    case "ArrowDown":
+      e.preventDefault();
+      setActiveSuggestion(activeSuggestionIndex < 0 ? 0 : Math.min(activeSuggestionIndex + 1, activeSuggestions.length - 1));
+      break;
+    case "ArrowUp":
+      e.preventDefault();
+      setActiveSuggestion(activeSuggestionIndex <= 0 ? -1 : activeSuggestionIndex - 1);
+      break;
+    case "Enter":
+      if (activeSuggestionIndex >= 0) {
+        e.preventDefault();
+        selectPlace(activeSuggestions[activeSuggestionIndex]);
+      }
+      break;
+    case "Escape":
+      e.preventDefault();
+      hideSuggestions();
+      break;
+  }
+});
+
 searchForm.addEventListener("submit", (e) => {
   e.preventDefault();
-  if (activeSuggestions.length > 0) {
+  if (activeSuggestionIndex >= 0 && activeSuggestions[activeSuggestionIndex]) {
+    selectPlace(activeSuggestions[activeSuggestionIndex]);
+  } else if (activeSuggestions.length > 0) {
     selectPlace(activeSuggestions[0]);
   }
 });
@@ -156,24 +185,67 @@ function renderSuggestions(results) {
     return;
   }
   suggestionsEl.innerHTML = "";
-  results.forEach((place) => {
+  activeSuggestionIndex = -1;
+
+  results.forEach((place, index) => {
     const li = document.createElement("li");
+    const button = document.createElement("button");
     const region = [place.admin1, place.country].filter(Boolean).join(", ");
-    li.innerHTML = `${place.name}<small>${region}</small>`;
-    li.addEventListener("click", () => selectPlace(place));
+
+    button.type = "button";
+    button.className = "search__suggestion-btn";
+    button.setAttribute("role", "option");
+    button.setAttribute("aria-selected", "false");
+    button.setAttribute("id", `suggestion-${index}`);
+
+    const nameEl = document.createElement("span");
+    nameEl.className = "search__suggestion-name";
+    nameEl.textContent = place.name;
+
+    const regionEl = document.createElement("small");
+    regionEl.textContent = region;
+
+    button.appendChild(nameEl);
+    if (region) button.appendChild(regionEl);
+    button.addEventListener("click", () => selectPlace(place));
+
+    li.appendChild(button);
     suggestionsEl.appendChild(li);
   });
+
   suggestionsEl.hidden = false;
+  searchInput.setAttribute("aria-expanded", "true");
+}
+
+function setActiveSuggestion(index) {
+  activeSuggestionIndex = index;
+  const buttons = suggestionsEl.querySelectorAll(".search__suggestion-btn");
+
+  buttons.forEach((button, buttonIndex) => {
+    const isActive = buttonIndex === index;
+    button.classList.toggle("is-active", isActive);
+    button.setAttribute("aria-selected", isActive ? "true" : "false");
+    searchInput.setAttribute("aria-activedescendant", isActive ? button.id : "");
+  });
+
+  if (index >= 0) {
+    buttons[index].scrollIntoView({ block: "nearest" });
+  }
 }
 
 function hideSuggestions() {
   suggestionsEl.hidden = true;
   suggestionsEl.innerHTML = "";
+  activeSuggestionIndex = -1;
+  searchInput.setAttribute("aria-expanded", "false");
+  searchInput.removeAttribute("aria-activedescendant");
 }
 
 function selectPlace(place) {
+  currentPlace = place;
   searchInput.value = `${place.name}${place.admin1 ? ", " + place.admin1 : ""}`;
   hideSuggestions();
+  loadFerryRoutes(place);
   loadWeather(place);
 }
 
@@ -295,25 +367,6 @@ function setAdvisory(info, currentWind, maxWindToday, rainChance) {
     `Rain chance today: ${Math.round(rainChance)}%`,
   ];
   advisoryFactors.innerHTML = factors.map((f) => `<li>${f}</li>`).join("");
-  // Ferry recommendation
-  if (level === "safe") {
-
-    ferryRecommendation.textContent =
-      "🟢 Ferry trips are operating normally.";
-
-  }
-  else if (level === "caution") {
-
-    ferryRecommendation.textContent =
-      "🟡 Some ferry departures may experience delays due to weather.";
-
-  }
-  else {
-
-    ferryRecommendation.textContent =
-      "🔴 Ferry trips are not recommended due to severe weather.";
-
-  }
 }
 
 function setAlert(category, maxWindToday, rainChance) {
@@ -411,7 +464,50 @@ function renderHourlyChart(hourly) {
    Ferry Routes
 ========================== */
 
-async function loadFerryRoutes() {
+function normalizeFerryText(value) {
+  return value
+    .toLowerCase()
+    .replace(/[\u2013\u2014]/g, " ")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+}
+
+function getFerryRouteRelevance(route, place) {
+  const placeText = [place.name, place.admin1, place.country].filter(Boolean).join(" ");
+  const placeTerms = normalizeFerryText(placeText);
+  const routeText = normalizeFerryText(`${route.route} ${route.departure} ${route.arrival}`);
+
+  let score = 0;
+
+  if (placeText && routeText.join(" ").includes(placeText.toLowerCase())) {
+    score += 12;
+  }
+
+  placeTerms.forEach((term) => {
+    if (routeText.includes(term)) score += 3;
+  });
+
+  const routeTerms = normalizeFerryText(route.route);
+  const overlaps = routeTerms.filter((term) => placeTerms.includes(term));
+  score += overlaps.length * 2;
+
+  return { score, overlaps };
+}
+
+function getRelevantFerryRoutes(routes, place) {
+  if (!place) return routes.slice(0, 3);
+
+  const scoredRoutes = routes
+    .map((route) => ({ ...route, relevance: getFerryRouteRelevance(route, place) }))
+    .filter((route) => route.relevance.score > 0)
+    .sort((a, b) => b.relevance.score - a.relevance.score);
+
+  return scoredRoutes.length ? scoredRoutes.slice(0, 3) : [];
+}
+
+async function loadFerryRoutes(place = currentPlace) {
 
   ferryLoading.hidden = false;
   ferryError.hidden = true;
@@ -426,7 +522,7 @@ async function loadFerryRoutes() {
 
     const routes = await response.json();
 
-    renderFerryRoutes(routes);
+    renderFerryRoutes(routes, place);
 
   } catch (error) {
 
@@ -473,18 +569,37 @@ async function addFerryRoute(routeData) {
 
 }
 
-function renderFerryRoutes(routes) {
+function renderFerryRoutes(routes, place = currentPlace) {
 
     ferryRoutesContainer.innerHTML = "";
 
-    routes.forEach(route => {
+    const relevantRoutes = getRelevantFerryRoutes(routes, place);
+
+    if (!relevantRoutes.length) {
+        const card = document.createElement("div");
+        card.className = "ferry-card ferry-card--empty";
+        card.innerHTML = `
+            <h4>No directly matching ferry routes</h4>
+            <p>Try searching for a coastal city or port to surface more relevant options.</p>
+        `;
+        ferryRoutesContainer.appendChild(card);
+        ferryRecommendation.textContent = "No direct ferry routes matched this destination yet.";
+        return;
+    }
+
+    relevantRoutes.forEach((route) => {
 
         const card = document.createElement("div");
 
         card.className = "ferry-card";
 
+        const badgeText = route.relevance.score >= 10 ? "Best match" : route.relevance.score >= 6 ? "Relevant" : "Nearby";
+
         card.innerHTML = `
-            <h4>${route.route}</h4>
+            <div class="ferry-card__head">
+                <h4>${route.route}</h4>
+                <span class="ferry-card__badge">${badgeText}</span>
+            </div>
             <p><strong>Departure:</strong> ${route.departure}</p>
             <p><strong>Arrival:</strong> ${route.arrival}</p>
             <p><strong>Operator:</strong> ${route.operator}</p>
@@ -495,9 +610,12 @@ function renderFerryRoutes(routes) {
 
     });
 
+    const destinationName = place ? `${place.name}${place.admin1 ? `, ${place.admin1}` : ""}` : "your selected destination";
+    ferryRecommendation.textContent = `The most relevant ferry option for ${destinationName} is ${relevantRoutes[0].route}.`;
+
 }
 
-refreshFerryBtn.addEventListener("click", loadFerryRoutes);
+refreshFerryBtn.addEventListener("click", () => loadFerryRoutes(currentPlace));
 window.addEventListener("DOMContentLoaded", () => {
 
     loadFerryRoutes();
